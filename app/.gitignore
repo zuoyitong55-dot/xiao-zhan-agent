@@ -1,5 +1,0 @@
-__pycache__/
-.env
-vector_db/
-*.pyc
-.DS_Store
