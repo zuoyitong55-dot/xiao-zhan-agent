@@ -26,8 +26,30 @@ if not github_token:
     st.stop()
 
 if not Path(DB_DIR).exists():
-    st.error("没有找到 vector_db。请先运行：python scripts/build_index.py")
+    st.error("没有找到 vector_db，需要先构建向量知识库。")
+
+    st.code("python scripts/build_index.py")
+
+    if st.button("一键构建向量知识库"):
+        import subprocess
+        import sys
+
+        with st.spinner("正在构建向量知识库..."):
+            result = subprocess.run(
+                [sys.executable, "scripts/build_index.py"],
+                capture_output=True,
+                text=True,
+            )
+
+        if result.returncode == 0:
+            st.success("向量知识库构建成功，请刷新页面。")
+            st.text(result.stdout)
+        else:
+            st.error("构建失败。")
+            st.text(result.stderr)
+
     st.stop()
+
 
 @st.cache_resource
 def load_embedding_model():
