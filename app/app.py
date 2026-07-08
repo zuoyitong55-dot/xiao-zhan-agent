@@ -55,10 +55,10 @@ if not Path(DB_DIR).exists():
 def load_embedding_model():
     return SentenceTransformer(EMBEDDING_MODEL)
 
-@st.cache_resource
 def load_chroma_collection():
     client = chromadb.PersistentClient(path=DB_DIR)
     return client.get_collection(COLLECTION_NAME)
+
 
 @st.cache_resource
 def load_llm_client():
@@ -133,6 +133,27 @@ def build_prompt(question: str, retrieved_docs):
 question = st.text_input("请输入问题：", placeholder="例如：肖战有哪些影视作品？")
 
 top_k = st.sidebar.slider("检索资料数量 Top K", 1, 10, 5)
+st.sidebar.divider()
+
+if st.sidebar.button("一键更新知识库"):
+    import subprocess
+    import sys
+
+    with st.spinner("正在运行爬虫并重建向量库..."):
+        result = subprocess.run(
+            [sys.executable, "scripts/update.py"],
+            capture_output=True,
+            text=True,
+        )
+
+    if result.returncode == 0:
+         st.cache_resource.clear()
+         st.sidebar.success("知识库更新完成，缓存已清理，请刷新页面后再提问。")
+         st.sidebar.text(result.stdout[-1000:])
+
+    else:
+        st.sidebar.error("知识库更新失败。")
+        st.sidebar.text(result.stderr[-1000:])
 
 if st.button("发送") and question:
     with st.spinner("正在检索知识库..."):
