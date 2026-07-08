@@ -21,7 +21,7 @@ docs = []
 ids = []
 metadatas = []
 
-for path in KNOWLEDGE_DIR.glob("*.md"):
+for path in KNOWLEDGE_DIR.rglob("*.md"):
     text = path.read_text(encoding="utf-8")
 
     chunk_size = 800
@@ -35,7 +35,9 @@ for path in KNOWLEDGE_DIR.glob("*.md"):
 
         if chunk:
             docs.append(chunk)
-            ids.append(f"{path.stem}_{chunk_id}")
+            safe_id = str(path.relative_to(KNOWLEDGE_DIR)).replace("/", "_").replace("\\", "_")
+            ids.append(f"{safe_id}_{chunk_id}")
+
             metadatas.append({"source": path.name})
 
         start += chunk_size - overlap

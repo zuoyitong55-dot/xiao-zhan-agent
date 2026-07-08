@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 
 URLS_FILE = Path("crawler/urls.txt")
-OUTPUT_DIR = Path("knowledge")
+OUTPUT_BASE_DIR = Path("knowledge")
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; XiaoZhanPublicAgent/1.0)"
@@ -16,6 +16,23 @@ def safe_filename(text: str) -> str:
     text = re.sub(r"[\\/:*?\"<>|]", "_", text)
     text = re.sub(r"\s+", "_", text)
     return text[:80] or "untitled"
+
+def classify_document(title: str, url: str, content: str) -> str:
+    text = f"{title} {url} {content[:500]}"
+
+    if any(k in text for k in ["采访", "专访", "访谈", "对话"]):
+        return "interviews"
+
+    if any(k in text for k in ["电视剧", "剧集", "陈情令", "玉骨遥", "藏海传", "梦中的那片海", "骄阳伴我", "王牌部队"]):
+        return "dramas"
+
+    if any(k in text for k in ["电影", "射雕英雄传", "侠之大者", "诛仙"]):
+        return "movies"
+
+    if any(k in text for k in ["工作室", "官方", "央视", "CCTV", "人民网", "新华社"]):
+        return "official"
+
+    return "general"
 
 def extract_page(url: str):
     response = requests.get(url, headers=HEADERS, timeout=20)
@@ -37,7 +54,7 @@ def extract_page(url: str):
     return title, markdown
 
 def main():
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    OUTPUT_BASE_DIR.mkdir(exist_ok=True)
 
     urls = [
         line.strip()
@@ -52,12 +69,18 @@ def main():
     for index, url in enumerate(urls, start=1):
         try:
             title, content = extract_page(url)
+            category = classify_document(title, url, content)
+
+            output_dir = OUTPUT_BASE_DIR / category
+            output_dir.mkdir(parents=True, exist_ok=True)
+
             filename = f"{index:03d}_{safe_filename(title)}.md"
-            output_path = OUTPUT_DIR / filename
+            output_path = output_dir / filename
 
             output_path.write_text(
                 f"# {title}\n\n"
                 f"来源：{url}\n\n"
+                f"分类：{category}\n\n"
                 f"类型：公开网页资料\n\n"
                 f"{content}\n",
                 encoding="utf-8",
@@ -72,3 +95,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
